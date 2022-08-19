@@ -42,7 +42,7 @@ const getMessage = (result) => {
   )})`;
 };
 
-const checkNumbers = (userNumber) => {
+const checkNumbers = (userNumber, computerNumber) => {
   let countNumberInPlace = 0;
   const numberInPlace = [];
 
@@ -72,7 +72,6 @@ const startGame = () => {
     getRandomNumber(MIN_COUNT_NUMBER, MAX_COUNT_NUMBER)
   );
 
-  console.log("computerNumber: ", computerNumber);
   console.log(
     "Количество чисел загаданых компьютером: ",
     computerNumber.length
@@ -80,7 +79,7 @@ const startGame = () => {
 
   for (let i = 0; i < COUNT_TRY; i++) {
     const userNumber = readlineSync.question("Введите число? ");
-    const resultTest = checkNumbers(userNumber);
+    const resultTest = checkNumbers(userNumber, computerNumber);
 
     if (resultTest.countNumberInPlace === computerNumber.length) {
       console.log(getMessage(resultTest));
