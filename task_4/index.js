@@ -32,7 +32,6 @@ const monster = {
 };
 
 const wizard = {
-  maxHealth: 10,
   name: "Евстафий",
   moves: [
     {
@@ -71,18 +70,20 @@ const wizard = {
 };
 
 const showHealthMonsterAndWizard = () => {
-  console.log("Здоровье монстра: ", monster.maxHealth);
-  console.log("Здоровье мага: ", wizard.maxHealth);
+  console.log("###########");
+  console.log("Здоровье монстра: ", monsterHealth);
+  console.log("Здоровье мага: ", wizardHealth);
+  console.log("###########");
 };
 
 const genRandomNumber = (min, max) => {
   return Math.floor(Math.random() * (max - min) + min);
 };
 
-const getMonsterAction = (cooldown) => {
+const getMonsterMoves = (cooldown) => {
   const freeCooldown = cooldown.filter((item) => item <= 0);
   const index = genRandomNumber(0, freeCooldown.length);
-  return { monsterAction: monster.moves[index], monsterActionIndex: index };
+  return { monsterMoves: monster.moves[index], monsterMovesIndex: index };
 };
 
 const calcCooldown = (cooldown) => {
@@ -104,34 +105,40 @@ const showActiveWizardSkills = () => {
   });
 };
 
-const showFightResult = (monsterMoves, wizardMoves) => {
+const calcMonsterHealth = (monsterMoves, wizardMoves) => {
   const allPhisicalDmgByMonster =
     wizardMoves.physicalDmg -
     wizardMoves.physicalDmg * (monsterMoves.physicArmorPercents / 100);
   const allMagicDmgByMonster =
     wizardMoves.magicDmg -
     wizardMoves.magicDmg * (monsterMoves.magicArmorPercents / 100);
-  monster.maxHealth =
-    monster.maxHealth - allPhisicalDmgByMonster - allMagicDmgByMonster;
+  monsterHealth =
+    monsterHealth - allPhisicalDmgByMonster - allMagicDmgByMonster;
+};
 
+const calcWizardHealth = (monsterMoves, wizardMoves) => {
   const allPhisicalDmgByWizard =
     monsterMoves.physicalDmg -
     monsterMoves.physicalDmg * (wizardMoves.physicArmorPercents / 100);
   const allMagicDmgByWizard =
     monsterMoves.magicDmg -
     monsterMoves.magicDmg * (wizardMoves.magicArmorPercents / 100);
-  wizard.maxHealth =
-    wizard.maxHealth - allPhisicalDmgByWizard - allMagicDmgByWizard;
+  wizardHealth = wizardHealth - allPhisicalDmgByWizard - allMagicDmgByWizard;
+};
+
+const showFightResult = (monsterMoves, wizardMoves) => {
+  calcMonsterHealth(monsterMoves, wizardMoves);
+  calcWizardHealth(monsterMoves, wizardMoves);
 
   showHealthMonsterAndWizard();
 
-  if (wizard.maxHealth <= 0 && monster.maxHealth > 0) {
+  if (wizardHealth <= 0 && monsterHealth > 0) {
     console.log("Ты проиграл!");
     gameEnd = true;
-  } else if (monster.maxHealth <= 0 && wizard.maxHealth > 0) {
+  } else if (monsterHealth <= 0 && wizardHealth > 0) {
     console.log("Ты выиграл!");
     gameEnd = true;
-  } else if (monster.maxHealth <= 0 && wizard.maxHealth <= 0) {
+  } else if (monsterHealth <= 0 && wizardHealth <= 0) {
     console.log("Ничья!");
     gameEnd = true;
   }
@@ -142,61 +149,70 @@ let gameEnd = false;
 let monsterCooldownMoves = Array(monster.moves.length).fill(0);
 let wizardCooldownMoves = Array(wizard.moves.length).fill(0);
 
-let { monsterAction, monsterActionIndex } =
-  getMonsterAction(monsterCooldownMoves);
-let round = 1;
-let isNextRound = true;
+let monsterHealth = monster.maxHealth;
+let wizardHealth = readlineSync.question(
+  "Введите количество здоровья для вашего мага: "
+);
 
-while (!gameEnd) {
-  console.log(`Раунд: ${round}`);
-  console.log("--------------");
+const startGame = () => {
+  let { monsterMoves, monsterMovesIndex } =
+    getMonsterMoves(monsterCooldownMoves);
+  let round = 1;
+  let isNextRound = true;
 
-  if (isNextRound) {
-    const monsterMoveInNewRound = getMonsterAction(monsterCooldownMoves);
-    monsterAction = monsterMoveInNewRound.monsterAction;
-    monsterActionIndex = monsterMoveInNewRound.monsterActionIndex;
-  }
-
-  console.log("Ход монстра: ");
-  console.log(monsterAction);
-
-  monsterCooldownMoves[monsterActionIndex] = monsterAction.cooldown;
-
-  console.log("--------------");
-  showActiveWizardSkills();
-  console.log("--------------");
-
-  const userActionIndex = readlineSync.question(
-    "Enter number of movies what you want change? "
-  );
-
-  if (
-    wizard.moves[userActionIndex - 1] &&
-    wizardCooldownMoves[userActionIndex - 1] <= 0
-  ) {
-    wizardCooldownMoves[userActionIndex - 1] =
-      wizard.moves[userActionIndex - 1].cooldown;
-
-    console.log("Ход мага: ");
-    console.log(wizard.moves[userActionIndex - 1]);
+  while (!gameEnd) {
+    console.log(`Раунд: ${round}`);
     console.log("--------------");
 
-    showFightResult(monsterAction, wizard.moves[userActionIndex - 1]);
+    if (isNextRound) {
+      const monsterMoveInNewRound = getMonsterMoves(monsterCooldownMoves);
+      monsterMoves = monsterMoveInNewRound.monsterMoves;
+      monsterMovesIndex = monsterMoveInNewRound.monsterMovesIndex;
+    }
 
-    round++;
-    isNextRound = true;
+    console.log("Ход монстра: ");
+    console.log(monsterMoves);
 
-    monsterCooldownMoves = calcCooldown(monsterCooldownMoves);
-    wizardCooldownMoves = calcCooldown(wizardCooldownMoves);
-  } else if (wizardCooldownMoves[userActionIndex - 1] > 0) {
-    isNextRound = false;
-    console.log(
-      `До использования осталось ${
-        wizardCooldownMoves[userActionIndex - 1]
-      } ходов!`
+    monsterCooldownMoves[monsterMovesIndex] = monsterMoves.cooldown;
+
+    console.log("--------------");
+    showActiveWizardSkills();
+    console.log("--------------");
+
+    const userMovesIndex = readlineSync.question(
+      "Введите номер действия, которые вы хотите использовать в этом раунде: "
     );
-  } else {
-    isNextRound = false;
-    console.log("Введите корректное значение");
+
+    if (
+      wizard.moves[userMovesIndex - 1] &&
+      wizardCooldownMoves[userMovesIndex - 1] <= 0
+    ) {
+      wizardCooldownMoves[userMovesIndex - 1] =
+        wizard.moves[userMovesIndex - 1].cooldown;
+
+      console.log("Ход мага: ");
+      console.log(wizard.moves[userMovesIndex - 1]);
+      console.log("--------------");
+
+      showFightResult(monsterMoves, wizard.moves[userMovesIndex - 1]);
+
+      monsterCooldownMoves = calcCooldown(monsterCooldownMoves);
+      wizardCooldownMoves = calcCooldown(wizardCooldownMoves);
+
+      round++;
+      isNextRound = true;
+    } else if (wizardCooldownMoves[userMovesIndex - 1] > 0) {
+      isNextRound = false;
+      console.log(
+        `До использования осталось ${
+          wizardCooldownMoves[userMovesIndex - 1]
+        } ходов!`
+      );
+    } else {
+      isNextRound = false;
+      console.log("Введите корректное значение");
+    }
   }
-}
+};
+
+startGame();
